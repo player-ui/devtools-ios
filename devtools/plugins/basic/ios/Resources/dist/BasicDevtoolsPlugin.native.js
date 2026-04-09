@@ -1441,7 +1441,7 @@ var BasicDevtoolsPlugin = function() {
             playerConfig: {}
         }
     };
-    var PLUGIN_VERSION = true ? "0.13.0" : "unstamped";
+    var PLUGIN_VERSION = true ? "0.13.1--canary.13.683" : "unstamped";
     var BasicPluginData = {
         id: PLUGIN_ID,
         name: "Standard Devtools",
