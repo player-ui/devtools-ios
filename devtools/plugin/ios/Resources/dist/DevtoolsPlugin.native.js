@@ -119,7 +119,7 @@ var DevtoolsPlugin = function() {
     var dsetAssign = function dsetAssign(obj, keys, value) {
         var merge = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : false;
         var key = keys[keys.length - 1];
-        if (!key) throw Error("Unable to assign at path containing undefined keys");
+        if (key === void 0) throw Error("Unable to assign at path containing undefined keys");
         var _acc_key2;
         var target = keys.slice(0, -1).reduce(function(acc, key2) {
             return (_acc_key2 = acc[key2]) !== null && _acc_key2 !== void 0 ? _acc_key2 : acc[key2] = {};
@@ -574,7 +574,7 @@ var DevtoolsPlugin = function() {
                     }
                 }
             }
-        } else if (target && typeof target === "object" && source && typeof source === "object") {
+        } else if (target && typeof target === "object" && !Array.isArray(target) && source && typeof source === "object" && !Array.isArray(source)) {
             var record = target;
             var _iteratorNormalCompletion1 = true, _didIteratorError1 = false, _iteratorError1 = undefined;
             if (!merge) try {
