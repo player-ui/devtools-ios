@@ -119,7 +119,7 @@ var DevtoolsPlugin = function() {
     var dsetAssign = function dsetAssign(obj, keys, value) {
         var merge = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : false;
         var key = keys[keys.length - 1];
-        if (!key) throw Error("Unable to assign at path containing undefined keys");
+        if (key === void 0) throw Error("Unable to assign at path containing undefined keys");
         var _acc_key2;
         var target = keys.slice(0, -1).reduce(function(acc, key2) {
             return (_acc_key2 = acc[key2]) !== null && _acc_key2 !== void 0 ? _acc_key2 : acc[key2] = {};
@@ -474,7 +474,7 @@ var DevtoolsPlugin = function() {
     var generateUUID = // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugin/core/src/helpers/uuid.ts
     function generateUUID() {
         var d = /* @__PURE__ */ new Date().getTime();
-        var d2 = typeof performance !== "undefined" && performance.now && performance.now() * 1e3 || 0;
+        var d2 = getNowTime() * 1e3;
         return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
             var r = Math.random() * 16;
             if (d > 0) {
@@ -547,9 +547,55 @@ var DevtoolsPlugin = function() {
         },
         generateUUID: function() {
             return generateUUID;
+        },
+        getNowTime: function() {
+            return getNowTime;
         }
     });
     // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/@player-devtools+utils@0.0.0/node_modules/@player-devtools/utils/dist/index.mjs
+    var useStateReducer = function(reducer2, initialState) {
+        var state = initialState;
+        var subscribers = /* @__PURE__ */ new Set();
+        return {
+            getState: function() {
+                return state;
+            },
+            /** Subscribe to state changes; returns an unsubscribe function. */ subscribe: function subscribe(subscriber) {
+                subscribers.add(subscriber);
+                subscriber(state);
+                return function() {
+                    return subscribers.delete(subscriber);
+                };
+            },
+            /** Dispatch an action through the reducer, then run side-effects. */ dispatch: function dispatch(action) {
+                var prevState = state;
+                var nextState = reducer2(prevState, action);
+                if (nextState !== prevState) {
+                    state = nextState;
+                    var _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = undefined;
+                    try {
+                        for(var _iterator = subscribers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true){
+                            var sub = _step.value;
+                            sub(state);
+                        }
+                    } catch (err) {
+                        _didIteratorError = true;
+                        _iteratorError = err;
+                    } finally{
+                        try {
+                            if (!_iteratorNormalCompletion && _iterator.return != null) {
+                                _iterator.return();
+                            }
+                        } finally{
+                            if (_didIteratorError) {
+                                throw _iteratorError;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    };
     function deepAssign(target, source) {
         var merge = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : false;
         if (Array.isArray(target) && Array.isArray(source)) {
@@ -574,7 +620,7 @@ var DevtoolsPlugin = function() {
                     }
                 }
             }
-        } else if (target && typeof target === "object" && source && typeof source === "object") {
+        } else if (target && typeof target === "object" && !Array.isArray(target) && source && typeof source === "object" && !Array.isArray(source)) {
             var record = target;
             var _iteratorNormalCompletion1 = true, _didIteratorError1 = false, _iteratorError1 = undefined;
             if (!merge) try {
@@ -937,50 +983,6 @@ var DevtoolsPlugin = function() {
     }
     var immer = new Immer2();
     var produce = immer.produce;
-    // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugin/core/src/state.ts
-    var useStateReducer = function(reducer2, initialState) {
-        var state = initialState;
-        var subscribers = /* @__PURE__ */ new Set();
-        return {
-            getState: function() {
-                return state;
-            },
-            /** Subscribe to state changes; returns an unsubscribe function. */ subscribe: function subscribe(subscriber) {
-                subscribers.add(subscriber);
-                subscriber(state);
-                return function() {
-                    return subscribers.delete(subscriber);
-                };
-            },
-            /** Dispatch an action through the reducer, then run side-effects. */ dispatch: function dispatch(action) {
-                var prevState = state;
-                var nextState = reducer2(prevState, action);
-                if (nextState !== prevState) {
-                    state = nextState;
-                    var _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = undefined;
-                    try {
-                        for(var _iterator = subscribers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true){
-                            var sub = _step.value;
-                            sub(state);
-                        }
-                    } catch (err) {
-                        _didIteratorError = true;
-                        _iteratorError = err;
-                    } finally{
-                        try {
-                            if (!_iteratorNormalCompletion && _iterator.return != null) {
-                                _iterator.return();
-                            }
-                        } finally{
-                            if (_didIteratorError) {
-                                throw _iteratorError;
-                            }
-                        }
-                    }
-                }
-            }
-        };
-    };
     // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/dequal@2.0.3/node_modules/dequal/dist/index.mjs
     var has2 = Object.prototype.hasOwnProperty;
     function dequal(foo, bar) {
@@ -1153,6 +1155,12 @@ var DevtoolsPlugin = function() {
         PLAYER_SELECTED: "player-selected"
     };
     var PLUGIN_INACTIVE_WARNING = "The plugin has been registered, but the Player development tools are not active. If you are working in a production environment, it is recommended to remove the plugin. To activate, enable through the browser extension popup for web or configure the FlipperClient for mobile.";
+    // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugin/core/src/helpers/getNowTime.ts
+    var getNowTime = globalThis.performance ? function() {
+        return globalThis.performance.now();
+    } : function() {
+        return Date.now();
+    };
     // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugin/core/src/helpers/genDataChangeTransaction.ts
     var NOOP_ID = -1;
     var genDataChangeTransaction = function(param) {
@@ -1189,9 +1197,12 @@ var DevtoolsPlugin = function() {
             this.lastProcessedInteraction = 0;
             this.store.subscribe(function(param) {
                 var interactions = param.interactions;
+                var start = _this.lastProcessedInteraction;
                 var _interactions_length;
-                if (_this.lastProcessedInteraction < ((_interactions_length = interactions.length) !== null && _interactions_length !== void 0 ? _interactions_length : 0)) {
-                    interactions.slice(_this.lastProcessedInteraction).forEach(_this.processInteraction.bind(_this));
+                var end = (_interactions_length = interactions.length) !== null && _interactions_length !== void 0 ? _interactions_length : 0;
+                if (start < end) {
+                    _this.lastProcessedInteraction = end;
+                    interactions.slice(start, end).forEach(_this.processInteraction.bind(_this));
                 }
             });
         }
@@ -1326,7 +1337,6 @@ var DevtoolsPlugin = function() {
                             _messenger_: true
                         });
                     }
-                    this.lastProcessedInteraction += 1;
                 }
             },
             {
