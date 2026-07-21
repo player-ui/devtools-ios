@@ -289,7 +289,7 @@ var Messenger = function() {
                         if (isBatch) {
                             connection.desync = false;
                             connection.messagesReceived += parsed.payload.events.length;
-                        } else {
+                        } else if (transactionID > -1) {
                             connection.messagesReceived += 1;
                         }
                     }
@@ -372,10 +372,6 @@ var Messenger = function() {
                     this.addEvent(parsed);
                     var target = parsed.target || null;
                     var msg = this.addTransactionMetadata(parsed);
-                    var connection = target ? this.getConnection(target) : null;
-                    if (connection) {
-                        connection.messagesSent += 1;
-                    }
                     return this.options.sendMessage(msg).catch(function() {
                         var _this_options_handleFailedMessage, _this_options;
                         (_this_options_handleFailedMessage = (_this_options = _this.options).handleFailedMessage) === null || _this_options_handleFailedMessage === void 0 ? void 0 : _this_options_handleFailedMessage.call(_this_options, msg);
