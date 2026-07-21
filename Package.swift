@@ -12,6 +12,7 @@ let excluded = ["ViewInspector", "UITests", "Tests", "BUILD"]
 
 let playerUIDependency: Target.Dependency = .product(name: "PlayerUI", package: "playerui-swift-package")
 let playerUILoggerDependency: Target.Dependency = .product(name: "PlayerUILogger", package: "playerui-swift-package")
+let playerUISwiftUIDependency: Target.Dependency = .product(name: "PlayerUISwiftUI", package: "playerui-swift-package")
 let swiftFlipperDependency: Target.Dependency = .product(name: "SwiftFlipper", package: "SwiftFlipper")
 
 let utils: Target = .target(
@@ -105,6 +106,30 @@ let basicPlugin: Target = .target(
     exclude: excluded
 )
 
+let baseProfilerDevtoolsPlugin: Target = .target(
+    name: "PlayerUIDevtoolsBaseProfilerDevtoolsPlugin",
+    dependencies: [
+        playerUIDependency,
+        playerUILoggerDependency,
+        "PlayerUIDevtoolsPlugin",
+        "PlayerUIDevtoolsUtilsSwiftUI"
+    ],
+    path: "devtools/plugins/profiler/ios",
+    exclude: excluded,
+    resources: [.process("Resources")]
+)
+
+let profilerPlugin: Target = .target(
+    name: "PlayerUIDevtoolsProfilerPlugin",
+    dependencies: [
+        swiftFlipperDependency,
+        "PlayerUIDevtoolsSwiftUIPlugin",
+        "PlayerUIDevtoolsBaseProfilerDevtoolsPlugin"
+    ],
+    path: "devtools/plugins/profiler/swiftui",
+    exclude: excluded
+)
+
 // --- END DECLARATIONS ---
 
 let allTargets: [Target] = [
@@ -115,7 +140,9 @@ let allTargets: [Target] = [
     plugin,
     swiftUIPlugin,
     baseBasicDevtoolsPlugin,
-    basicPlugin
+    basicPlugin,
+    baseProfilerDevtoolsPlugin,
+    profilerPlugin
 ]
 
 // This is the Package.swift for our SPM release.
@@ -132,7 +159,7 @@ let package = Package(
     products: allTargets.map { .library(name: $0.name, targets: [$0.name]) },
     dependencies: [
         .package(url: "https://github.com/player-ui/playerui-swift-package.git", from: "0.11.2"),
-        .package(url: "https://github.com/chiragramani/SwiftFlipper.git", from: "0.1.0"),
+        .package(url: "https://github.com/player-ui/SwiftFlipper.git", exact: "0.3.0"),
     ],
     targets: allTargets
 )

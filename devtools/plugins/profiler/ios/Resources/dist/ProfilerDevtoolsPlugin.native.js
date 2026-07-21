@@ -10,6 +10,12 @@ function _array_with_holes(arr) {
 function _array_without_holes(arr) {
     if (Array.isArray(arr)) return _array_like_to_array(arr);
 }
+function _assert_this_initialized(self) {
+    if (self === void 0) {
+        throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+    return self;
+}
 function _class_call_check(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
         throw new TypeError("Cannot call a class as a function");
@@ -41,6 +47,41 @@ function _define_property(obj, key, value) {
         obj[key] = value;
     }
     return obj;
+}
+function _get(target, property, receiver) {
+    if (typeof Reflect !== "undefined" && Reflect.get) {
+        _get = Reflect.get;
+    } else {
+        _get = function get(target, property, receiver) {
+            var base = _super_prop_base(target, property);
+            if (!base) return;
+            var desc = Object.getOwnPropertyDescriptor(base, property);
+            if (desc.get) {
+                return desc.get.call(receiver || target);
+            }
+            return desc.value;
+        };
+    }
+    return _get(target, property, receiver || target);
+}
+function _get_prototype_of(o) {
+    _get_prototype_of = Object.setPrototypeOf ? Object.getPrototypeOf : function getPrototypeOf(o) {
+        return o.__proto__ || Object.getPrototypeOf(o);
+    };
+    return _get_prototype_of(o);
+}
+function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+        throw new TypeError("Super expression must either be null or a function");
+    }
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+        constructor: {
+            value: subClass,
+            writable: true,
+            configurable: true
+        }
+    });
+    if (superClass) _set_prototype_of(subClass, superClass);
 }
 function _instanceof(left, right) {
     if (right != null && typeof Symbol !== "undefined" && right[Symbol.hasInstance]) {
@@ -97,8 +138,52 @@ function _object_spread(target) {
     }
     return target;
 }
+function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+    if (Object.getOwnPropertySymbols) {
+        var symbols = Object.getOwnPropertySymbols(object);
+        if (enumerableOnly) {
+            symbols = symbols.filter(function(sym) {
+                return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+            });
+        }
+        keys.push.apply(keys, symbols);
+    }
+    return keys;
+}
+function _object_spread_props(target, source) {
+    source = source != null ? source : {};
+    if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+    } else {
+        ownKeys(Object(source)).forEach(function(key) {
+            Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+    }
+    return target;
+}
+function _possible_constructor_return(self, call) {
+    if (call && (_type_of(call) === "object" || typeof call === "function")) {
+        return call;
+    }
+    return _assert_this_initialized(self);
+}
+function _set_prototype_of(o, p) {
+    _set_prototype_of = Object.setPrototypeOf || function setPrototypeOf(o, p) {
+        o.__proto__ = p;
+        return o;
+    };
+    return _set_prototype_of(o, p);
+}
 function _sliced_to_array(arr, i) {
     return _array_with_holes(arr) || _iterable_to_array_limit(arr, i) || _unsupported_iterable_to_array(arr, i) || _non_iterable_rest();
+}
+function _super_prop_base(object, property) {
+    while(!Object.prototype.hasOwnProperty.call(object, property)){
+        object = _get_prototype_of(object);
+        if (object === null) break;
+    }
+    return object;
 }
 function _to_consumable_array(arr) {
     return _array_without_holes(arr) || _iterable_to_array(arr) || _unsupported_iterable_to_array(arr) || _non_iterable_spread();
@@ -115,16 +200,40 @@ function _unsupported_iterable_to_array(o, minLen) {
     if (n === "Map" || n === "Set") return Array.from(n);
     if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _array_like_to_array(o, minLen);
 }
-var DevtoolsPlugin = function() {
+function _is_native_reflect_construct() {
+    if (typeof Reflect === "undefined" || !Reflect.construct) return false;
+    if (Reflect.construct.sham) return false;
+    if (typeof Proxy === "function") return true;
+    try {
+        Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function() {}));
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+function _create_super(Derived) {
+    var hasNativeReflectConstruct = _is_native_reflect_construct();
+    return function _createSuperInternal() {
+        var Super = _get_prototype_of(Derived), result;
+        if (hasNativeReflectConstruct) {
+            var NewTarget = _get_prototype_of(this).constructor;
+            result = Reflect.construct(Super, arguments, NewTarget);
+        } else {
+            result = Super.apply(this, arguments);
+        }
+        return _possible_constructor_return(this, result);
+    };
+}
+var ProfilerDevtoolsPlugin = function() {
     var dsetAssign = function dsetAssign(obj, keys, value) {
-        var merge = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : false;
+        var merge2 = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : false;
         var key = keys[keys.length - 1];
         if (key === void 0) throw Error("Unable to assign at path containing undefined keys");
         var _acc_key2;
         var target = keys.slice(0, -1).reduce(function(acc, key2) {
             return (_acc_key2 = acc[key2]) !== null && _acc_key2 !== void 0 ? _acc_key2 : acc[key2] = {};
         }, obj);
-        target[key] = deepAssign(target[key], value, merge);
+        target[key] = deepAssign(target[key], value, merge2);
     };
     var die = function die(error) {
         for(var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++){
@@ -471,21 +580,14 @@ var DevtoolsPlugin = function() {
             }
         }
     };
-    var generateUUID = // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugin/core/src/helpers/uuid.ts
-    function generateUUID() {
-        var d = /* @__PURE__ */ new Date().getTime();
-        var d2 = getNowTime() * 1e3;
-        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
-            var r = Math.random() * 16;
-            if (d > 0) {
-                r = (d + r) % 16 | 0;
-                d = Math.floor(d / 16);
-            } else {
-                r = (d2 + r) % 16 | 0;
-                d2 = Math.floor(d2 / 16);
-            }
-            return (c === "x" ? r : r & 3 | 8).toString(16);
-        });
+    var dset = function dset(obj, keys, val) {
+        keys.split && (keys = keys.split("."));
+        var i = 0, l = keys.length, t = obj, x, k;
+        while(i < l){
+            k = "" + keys[i++];
+            if (k === "__proto__" || k === "constructor" || k === "prototype") break;
+            t = t[k] = i === l ? merge(t[k], val) : _type_of(x = t[k]) === (typeof keys === "undefined" ? "undefined" : _type_of(keys)) ? x : keys[i] * 0 !== 0 || !!~("" + keys[i]).indexOf(".") ? {} : [];
+        }
     };
     var __defProp = Object.defineProperty;
     var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -533,26 +635,14 @@ var DevtoolsPlugin = function() {
             value: true
         }), mod);
     };
-    // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugin/core/src/index.ts
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugins/profiler/core/src/index.ts
     var src_exports = {};
     __export(src_exports, {
-        DevtoolsPlugin: function() {
-            return DevtoolsPlugin;
-        },
-        PLUGIN_INACTIVE_WARNING: function() {
-            return PLUGIN_INACTIVE_WARNING;
-        },
-        genDataChangeTransaction: function() {
-            return genDataChangeTransaction;
-        },
-        generateUUID: function() {
-            return generateUUID;
-        },
-        getNowTime: function() {
-            return getNowTime;
+        ProfilerDevtoolsPlugin: function() {
+            return ProfilerDevtoolsPlugin;
         }
     });
-    // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/@player-devtools+utils@0.0.0/node_modules/@player-devtools/utils/dist/index.mjs
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/@player-devtools+utils@0.0.0/node_modules/@player-devtools/utils/dist/index.mjs
     var useStateReducer = function(reducer2, initialState) {
         var state = initialState;
         var subscribers = /* @__PURE__ */ new Set();
@@ -597,14 +687,14 @@ var DevtoolsPlugin = function() {
         };
     };
     function deepAssign(target, source) {
-        var merge = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : false;
+        var merge2 = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : false;
         if (Array.isArray(target) && Array.isArray(source)) {
-            while(!merge && target.length > source.length)target.pop();
+            while(!merge2 && target.length > source.length)target.pop();
             var _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = undefined;
             try {
                 for(var _iterator = source.entries()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true){
                     var _step_value = _sliced_to_array(_step.value, 2), index = _step_value[0], item = _step_value[1];
-                    target[index] = deepAssign(target[index], item, merge);
+                    target[index] = deepAssign(target[index], item, merge2);
                 }
             } catch (err) {
                 _didIteratorError = true;
@@ -623,7 +713,7 @@ var DevtoolsPlugin = function() {
         } else if (target && typeof target === "object" && !Array.isArray(target) && source && typeof source === "object" && !Array.isArray(source)) {
             var record = target;
             var _iteratorNormalCompletion1 = true, _didIteratorError1 = false, _iteratorError1 = undefined;
-            if (!merge) try {
+            if (!merge2) try {
                 for(var _iterator1 = Object.keys(target)[Symbol.iterator](), _step1; !(_iteratorNormalCompletion1 = (_step1 = _iterator1.next()).done); _iteratorNormalCompletion1 = true){
                     var key = _step1.value;
                     if (!(key in source)) delete record[key];
@@ -646,7 +736,7 @@ var DevtoolsPlugin = function() {
             try {
                 for(var _iterator2 = Object.entries(source)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true){
                     var _step_value1 = _sliced_to_array(_step2.value, 2), key1 = _step_value1[0], item1 = _step_value1[1];
-                    record[key1] = deepAssign(record[key1], item1, merge);
+                    record[key1] = deepAssign(record[key1], item1, merge2);
                 }
             } catch (err) {
                 _didIteratorError2 = true;
@@ -667,7 +757,7 @@ var DevtoolsPlugin = function() {
         }
         return target;
     }
-    // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/immer@10.1.3/node_modules/immer/dist/immer.mjs
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/immer@10.1.3/node_modules/immer/dist/immer.mjs
     var NOTHING = Symbol.for("immer-nothing");
     var DRAFTABLE = Symbol.for("immer-draftable");
     var DRAFT_STATE = Symbol.for("immer-state");
@@ -983,7 +1073,7 @@ var DevtoolsPlugin = function() {
     }
     var immer = new Immer2();
     var produce = immer.produce;
-    // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/dequal@2.0.3/node_modules/dequal/dist/index.mjs
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/dequal@2.0.3/node_modules/dequal/dist/index.mjs
     var has2 = Object.prototype.hasOwnProperty;
     function dequal(foo, bar) {
         var ctor, len, tmp;
@@ -1087,7 +1177,7 @@ var DevtoolsPlugin = function() {
         }
         return foo !== foo && bar !== bar;
     }
-    // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugin/core/src/reducer.ts
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/@player-devtools+plugin@0.0.0/node_modules/@player-devtools/plugin/dist/index.mjs
     var containsInteraction = function(interactions, interaction) {
         return interactions.filter(function(i) {
             return dequal(i, interaction);
@@ -1150,26 +1240,23 @@ var DevtoolsPlugin = function() {
                 return state;
         }
     };
-    // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugin/core/src/constants.ts
     var INTERACTIONS = {
         PLAYER_SELECTED: "player-selected"
     };
     var PLUGIN_INACTIVE_WARNING = "The plugin has been registered, but the Player development tools are not active. If you are working in a production environment, it is recommended to remove the plugin. To activate, enable through the browser extension popup for web or configure the FlipperClient for mobile.";
-    // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugin/core/src/helpers/getNowTime.ts
     var getNowTime = globalThis.performance ? function() {
         return globalThis.performance.now();
     } : function() {
         return Date.now();
     };
-    // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugin/core/src/helpers/genDataChangeTransaction.ts
     var NOOP_ID = -1;
     var genDataChangeTransaction = function(param) {
-        var playerID = param.playerID, data = param.data, pluginID = param.pluginID;
+        var playerID = param.playerID, data = param.data, pluginID2 = param.pluginID;
         return {
             id: NOOP_ID,
             type: "PLAYER_DEVTOOLS_PLUGIN_DATA_CHANGE",
             payload: {
-                pluginID: pluginID,
+                pluginID: pluginID2,
                 data: data
             },
             sender: playerID,
@@ -1179,7 +1266,6 @@ var DevtoolsPlugin = function() {
             _messenger_: true
         };
     };
-    // ../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugin/core/src/plugin.ts
     var INITIAL_STATE = {
         messages: [],
         plugins: {},
@@ -1349,6 +1435,803 @@ var DevtoolsPlugin = function() {
         ]);
         return DevtoolsPlugin;
     }();
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/@player-devtools+profiler-plugin-content@0.0.0/node_modules/@player-devtools/profiler-plugin-content/dist/index.mjs
+    var PLUGIN_ID = "player-ui-profiler-plugin";
+    var INTERACTIONS2 = {
+        START_PROFILING: "start-profiling",
+        STOP_PROFILING: "stop-profiling",
+        RESET_PROFILING: "reset-profiling"
+    };
+    var flow_default = {
+        id: "player-ui-profiler-plugin",
+        views: [
+            {
+                id: "Profile",
+                type: "stacked-view",
+                header: {
+                    asset: {
+                        id: "Profile-header",
+                        type: "navigation",
+                        values: [
+                            {
+                                asset: {
+                                    id: "Profile-header-values-0",
+                                    type: "action",
+                                    value: "Profile",
+                                    label: {
+                                        asset: {
+                                            id: "Profile-header-values-0-label",
+                                            type: "text",
+                                            value: "Flame Graph"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                asset: {
+                                    id: "Profile-header-values-1",
+                                    type: "action",
+                                    value: "Raw",
+                                    label: {
+                                        asset: {
+                                            id: "Profile-header-values-1-label",
+                                            type: "text",
+                                            value: "Raw"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                main: {
+                    asset: {
+                        id: "Profile-main",
+                        type: "flame-graph",
+                        width: "@[{{rootNode.value}} / 200]@",
+                        binding: "rootNode"
+                    }
+                },
+                footer: {
+                    asset: {
+                        id: "Profile-footer",
+                        type: "collection",
+                        values: [
+                            {
+                                asset: {
+                                    id: "Profile-footer-values-0",
+                                    type: "action",
+                                    exp: "conditional({{profiling}} === true, publish('stop-profiling'), publish('start-profiling'))",
+                                    label: {
+                                        asset: {
+                                            id: "Profile-footer-values-0-label",
+                                            type: "text",
+                                            value: "@[conditional({{profiling}} === true, 'Stop', 'Start')]@"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                asset: {
+                                    id: "Profile-footer-values-1",
+                                    type: "action",
+                                    exp: "publish('reset-profiling')",
+                                    label: {
+                                        asset: {
+                                            id: "Profile-footer-values-1-label",
+                                            type: "text",
+                                            value: "Reset"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                id: "Raw",
+                type: "stacked-view",
+                header: {
+                    asset: {
+                        id: "Raw-header",
+                        type: "navigation",
+                        values: [
+                            {
+                                asset: {
+                                    id: "Raw-header-values-0",
+                                    type: "action",
+                                    value: "Profile",
+                                    label: {
+                                        asset: {
+                                            id: "Raw-header-values-0-label",
+                                            type: "text",
+                                            value: "Flame Graph"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                asset: {
+                                    id: "Raw-header-values-1",
+                                    type: "action",
+                                    value: "Raw",
+                                    label: {
+                                        asset: {
+                                            id: "Raw-header-values-1-label",
+                                            type: "text",
+                                            value: "Raw"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                main: {
+                    asset: {
+                        id: "Raw-main",
+                        type: "object-inspector",
+                        binding: "rawNodes"
+                    }
+                },
+                footer: {
+                    asset: {
+                        id: "Raw-footer",
+                        type: "collection",
+                        values: [
+                            {
+                                asset: {
+                                    id: "Raw-footer-values-0",
+                                    type: "action",
+                                    exp: "conditional({{profiling}} === true, publish('stop-profiling'), publish('start-profiling'))",
+                                    label: {
+                                        asset: {
+                                            id: "Raw-footer-values-0-label",
+                                            type: "text",
+                                            value: "@[conditional({{profiling}} === true, 'Stop', 'Start')]@"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                asset: {
+                                    id: "Raw-footer-values-1",
+                                    type: "action",
+                                    exp: "publish('reset-profiling')",
+                                    label: {
+                                        asset: {
+                                            id: "Raw-footer-values-1-label",
+                                            type: "text",
+                                            value: "Reset"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        navigation: {
+            BEGIN: "Plugin",
+            Plugin: {
+                startState: "PROFILE",
+                PROFILE: {
+                    state_type: "VIEW",
+                    ref: "Profile",
+                    transitions: {
+                        Profile: "PROFILE",
+                        Raw: "RAW"
+                    }
+                },
+                RAW: {
+                    state_type: "VIEW",
+                    ref: "Raw",
+                    transitions: {
+                        Profile: "PROFILE",
+                        Raw: "RAW"
+                    }
+                }
+            }
+        },
+        schema: {
+            ROOT: {
+                profiling: {
+                    type: "BooleanType",
+                    default: false,
+                    validation: [
+                        {
+                            type: "oneOf",
+                            message: "Value must be true or false",
+                            options: [
+                                true,
+                                false
+                            ]
+                        }
+                    ]
+                },
+                displayFlameGraph: {
+                    type: "BooleanType",
+                    default: false,
+                    validation: [
+                        {
+                            type: "oneOf",
+                            message: "Value must be true or false",
+                            options: [
+                                true,
+                                false
+                            ]
+                        }
+                    ]
+                },
+                rootNode: {
+                    type: "RecordType"
+                },
+                rootNodes: {
+                    type: "RecordType"
+                },
+                rawNodes: {
+                    type: "RecordType"
+                }
+            }
+        },
+        data: {
+            profiling: false,
+            displayFlameGraph: false,
+            rootNode: {
+                value: 0
+            },
+            rawNodes: []
+        }
+    };
+    var PLUGIN_VERSION = true ? "0.13.1--canary.17.955" : "unstamped";
+    var _obj;
+    var ProfilerPluginData = {
+        id: PLUGIN_ID,
+        name: "Player UI Profiler",
+        description: "Standard Player UI Profiler",
+        version: PLUGIN_VERSION,
+        flow: flow_default,
+        capabilities: {
+            description: "Profiles Player hook execution timing and exposes the result as a flame graph. Supports starting, stopping, and resetting profiling.",
+            data: {
+                rootNode: {
+                    description: "The captured hook timings as a flame-graph tree (transformed for display)"
+                },
+                rawNodes: {
+                    description: "The untransformed captured profiler nodes"
+                },
+                profiling: {
+                    description: "Whether profiling is currently running"
+                },
+                displayFlameGraph: {
+                    description: "Whether the client should render the flame graph"
+                }
+            },
+            actions: (_obj = {}, _define_property(_obj, INTERACTIONS2.START_PROFILING, {
+                description: "Start profiling Player hook execution"
+            }), _define_property(_obj, INTERACTIONS2.STOP_PROFILING, {
+                description: "Stop profiling and publish the captured flame-graph data"
+            }), _define_property(_obj, INTERACTIONS2.RESET_PROFILING, {
+                description: "Clear the captured profiler nodes"
+            }), _obj)
+        }
+    };
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/dset@3.1.4/node_modules/dset/merge/index.mjs
+    function merge(a, b, k) {
+        if (typeof a === "object" && typeof b === "object") {
+            if (Array.isArray(a) && Array.isArray(b)) {
+                for(k = 0; k < b.length; k++){
+                    a[k] = merge(a[k], b[k]);
+                }
+            } else {
+                for(k in b){
+                    if (k === "__proto__" || k === "constructor" || k === "prototype") break;
+                    a[k] = merge(a[k], b[k]);
+                }
+            }
+            return a;
+        }
+        return b;
+    }
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugins/profiler/core/src/helpers/isRecordType.ts
+    var isRecordType = function(obj) {
+        return typeof obj === "object" && obj !== null && !Array.isArray(obj);
+    };
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugins/profiler/core/src/helpers/hasHooks.ts
+    var hasHooks = function(obj) {
+        return isRecordType(obj) && "hooks" in obj && isRecordType(obj.hooks);
+    };
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugins/profiler/core/src/helpers/isMatchingPaths.ts
+    var isMatchingPaths = function(path1, path2) {
+        if (path1.length !== path2.length) return false;
+        return path1.every(function(val, idx) {
+            return val === path2[idx];
+        });
+    };
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugins/profiler/core/src/helpers/profiler.ts
+    var Profiler = /*#__PURE__*/ function() {
+        function Profiler(onUpdate) {
+            _class_call_check(this, Profiler);
+            this.onUpdate = onUpdate;
+            this.rootNodes = [];
+            this.stack = [];
+        }
+        _create_class(Profiler, [
+            {
+                key: "start",
+                value: function start() {
+                    var _this_onUpdate, _this;
+                    this.rootNodes = [];
+                    this.stack = [];
+                    (_this_onUpdate = (_this = this).onUpdate) === null || _this_onUpdate === void 0 ? void 0 : _this_onUpdate.call(_this);
+                }
+            },
+            {
+                key: "clear",
+                value: function clear() {
+                    var _this_onUpdate, _this;
+                    var now = getNowTime();
+                    var _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = undefined;
+                    try {
+                        for(var _iterator = this.stack[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true){
+                            var node = _step.value;
+                            node.startTime = now;
+                            node.children = node.children.filter(function(x) {
+                                return x.endTime === void 0;
+                            });
+                        }
+                    } catch (err) {
+                        _didIteratorError = true;
+                        _iteratorError = err;
+                    } finally{
+                        try {
+                            if (!_iteratorNormalCompletion && _iterator.return != null) {
+                                _iterator.return();
+                            }
+                        } finally{
+                            if (_didIteratorError) {
+                                throw _iteratorError;
+                            }
+                        }
+                    }
+                    for(var i = 1; i < this.stack.length; i++){
+                        this.stack[i - 1].children = [
+                            this.stack[i]
+                        ];
+                    }
+                    this.rootNodes = this.stack.slice(0, 1);
+                    (_this_onUpdate = (_this = this).onUpdate) === null || _this_onUpdate === void 0 ? void 0 : _this_onUpdate.call(_this);
+                }
+            },
+            {
+                key: "cloneNode",
+                value: function cloneNode(node, snapshotTime) {
+                    var _this = this;
+                    var children = node.children.map(function(c) {
+                        return _this.cloneNode(c, snapshotTime);
+                    });
+                    var _node_endTime;
+                    var endTime = (_node_endTime = node.endTime) !== null && _node_endTime !== void 0 ? _node_endTime : snapshotTime !== void 0 ? snapshotTime : void 0;
+                    var _current2_value, _node_value;
+                    var value = (_node_value = node.value) !== null && _node_value !== void 0 ? _node_value : endTime !== void 0 && node.startTime !== void 0 ? Math.ceil((endTime - node.startTime) * 1e3) : children.reduce(function(prev, current2) {
+                        var _current2;
+                        return prev + ((_current2_value = (_current2 = current2) === null || _current2 === void 0 ? void 0 : _current2.value) !== null && _current2_value !== void 0 ? _current2_value : 0);
+                    }, 0);
+                    return _object_spread_props(_object_spread({}, node), {
+                        endTime: endTime,
+                        value: value,
+                        children: children
+                    });
+                }
+            },
+            {
+                key: "getSnapshot",
+                value: function getSnapshot() {
+                    var _this = this;
+                    var now = getNowTime();
+                    return {
+                        rootNodes: this.rootNodes.map(function(n) {
+                            return _this.cloneNode(n, now);
+                        })
+                    };
+                }
+            },
+            {
+                key: "startTimer",
+                value: function startTimer(hookName) {
+                    var node = {
+                        name: hookName,
+                        startTime: getNowTime(),
+                        children: []
+                    };
+                    if (this.stack.length > 0) {
+                        this.stack[this.stack.length - 1].children.push(node);
+                    } else {
+                        this.rootNodes.push(node);
+                    }
+                    this.stack.push(node);
+                }
+            },
+            {
+                key: "finalizeNode",
+                value: function finalizeNode(node, endTime) {
+                    var duration = node.startTime !== void 0 ? endTime - node.startTime : 0.01;
+                    node.endTime = endTime;
+                    node.value = Math.ceil(duration * 1e3);
+                    node.tooltip = "".concat(node.name, ", ").concat(duration.toFixed(4), " (ms)");
+                }
+            },
+            {
+                key: "endTimer",
+                value: function endTimer(param) {
+                    var hookName = param.hookName;
+                    var _this_onUpdate, _this;
+                    var idx = _to_consumable_array(this.stack).reverse().findIndex(function(n) {
+                        return n.name === hookName;
+                    });
+                    if (idx === -1) {
+                        console.warn("endTimer: '".concat(hookName, "' not found in stack, ignoring"));
+                        return;
+                    }
+                    var targetIdx = this.stack.length - 1 - idx;
+                    var endTime = getNowTime();
+                    for(var i = this.stack.length - 1; i > targetIdx; i--){
+                        var orphan = this.stack[i];
+                        console.warn("endTimer: popping '".concat(orphan.name, "' — timer was never explicitly ended"));
+                        this.finalizeNode(orphan, endTime);
+                    }
+                    this.finalizeNode(this.stack[targetIdx], endTime);
+                    this.stack.length = targetIdx;
+                    (_this_onUpdate = (_this = this).onUpdate) === null || _this_onUpdate === void 0 ? void 0 : _this_onUpdate.call(_this);
+                }
+            },
+            {
+                key: "stopProfiler",
+                value: function stopProfiler() {
+                    return {
+                        rootNodes: _to_consumable_array(this.rootNodes)
+                    };
+                }
+            }
+        ]);
+        return Profiler;
+    }();
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugins/profiler/core/src/helpers/transformProfilerData.ts
+    var createSpacer = function(gap) {
+        return {
+            name: "(work)",
+            value: Math.ceil(gap * 1e3),
+            children: [],
+            backgroundColor: "#000000",
+            color: "#000000",
+            tooltip: "Placeholder time between hooks"
+        };
+    };
+    var transformProfilerData = function(root) {
+        return _object_spread_props(_object_spread({}, root), {
+            children: transformProfilerDataHelper(root.children, root.startTime)
+        });
+    };
+    var transformProfilerDataHelper = function(nodes) {
+        var parentStart = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : 0;
+        var merged = [];
+        var cursor = parentStart;
+        var _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = undefined;
+        try {
+            for(var _iterator = nodes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true){
+                var node = _step.value;
+                if (node.startTime === void 0 || node.endTime === void 0 || node.value === void 0 || node.value <= 0) {
+                    continue;
+                }
+                var next = _object_spread_props(_object_spread({}, node), {
+                    children: transformProfilerDataHelper(node.children, node.startTime)
+                });
+                var gap = node.startTime - cursor;
+                if (gap > 0) {
+                    merged.push(createSpacer(gap));
+                }
+                cursor = node.endTime;
+                merged.push(next);
+            }
+        } catch (err) {
+            _didIteratorError = true;
+            _iteratorError = err;
+        } finally{
+            try {
+                if (!_iteratorNormalCompletion && _iterator.return != null) {
+                    _iterator.return();
+                }
+            } finally{
+                if (_didIteratorError) {
+                    throw _iteratorError;
+                }
+            }
+        }
+        return merged;
+    };
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugins/profiler/core/src/addProfilerInterceptorsToHooks.ts
+    var IGNORED_PATHS = [
+        [
+            "view"
+        ]
+    ];
+    var isAnyHook = function(obj) {
+        return isRecordType(obj) && "intercept" in obj && typeof obj.intercept === "function";
+    };
+    var addProfilerInterceptorsToHooks = function(obj, profiler) {
+        var currentPath = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : [], intercepted = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : /* @__PURE__ */ new WeakSet();
+        if (!hasHooks(obj)) {
+            return;
+        }
+        Object.entries(obj.hooks).forEach(function(param) {
+            var _param = _sliced_to_array(param, 2), key = _param[0], value = _param[1];
+            var nextPath = _to_consumable_array(currentPath).concat([
+                key
+            ]);
+            if (!isAnyHook(value) || IGNORED_PATHS.some(function(path) {
+                return isMatchingPaths(path, nextPath);
+            }) || intercepted.has(value)) {
+                return;
+            }
+            intercepted.add(value);
+            value.intercept({
+                call: function() {
+                    for(var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++){
+                        args[_key] = arguments[_key];
+                    }
+                    if (args.length > 0) {
+                        addProfilerInterceptorsToHooks(args[0], profiler, nextPath, intercepted);
+                    }
+                    profiler.startTimer(key);
+                },
+                done: function() {
+                    profiler.endTimer({
+                        hookName: key
+                    });
+                },
+                result: function() {
+                    profiler.endTimer({
+                        hookName: key
+                    });
+                },
+                error: function() {
+                    profiler.endTimer({
+                        hookName: key
+                    });
+                }
+            });
+        });
+    };
+    // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/devtools/plugins/profiler/core/src/plugin.ts
+    var wrapInRoot = function(nodes) {
+        var _nodes_reduce;
+        var startTime = (_nodes_reduce = nodes.reduce(function(min, n) {
+            return n.startTime !== void 0 && (min === void 0 || n.startTime < min) ? n.startTime : min;
+        }, void 0)) !== null && _nodes_reduce !== void 0 ? _nodes_reduce : 0;
+        var _nodes_reduce1;
+        var endTime = (_nodes_reduce1 = nodes.reduce(function(max, n) {
+            return n.endTime !== void 0 && (max === void 0 || n.endTime > max) ? n.endTime : max;
+        }, void 0)) !== null && _nodes_reduce1 !== void 0 ? _nodes_reduce1 : startTime;
+        return {
+            name: "root",
+            startTime: startTime,
+            endTime: endTime,
+            value: Math.ceil((endTime - startTime) * 1e3),
+            children: nodes
+        };
+    };
+    var pluginData = ProfilerPluginData;
+    var pluginID = pluginData.id;
+    var ProfilerDevtoolsPlugin = /*#__PURE__*/ function(DevtoolsPlugin) {
+        _inherits(ProfilerDevtoolsPlugin, DevtoolsPlugin);
+        var _super = _create_super(ProfilerDevtoolsPlugin);
+        function ProfilerDevtoolsPlugin(options) {
+            _class_call_check(this, ProfilerDevtoolsPlugin);
+            var _this;
+            _this = _super.call(this, _object_spread_props(_object_spread({}, options), {
+                pluginData: pluginData
+            }));
+            _this.name = "ProfilerDevtoolsPlugin";
+            _this.interactionMap = /* @__PURE__ */ new Map([
+                [
+                    INTERACTIONS2.START_PROFILING,
+                    function() {
+                        return _this.startProfiler();
+                    }
+                ],
+                [
+                    INTERACTIONS2.STOP_PROFILING,
+                    function() {
+                        return _this.stopProfiler();
+                    }
+                ],
+                [
+                    INTERACTIONS2.RESET_PROFILING,
+                    function() {
+                        return _this.clearProfiler();
+                    }
+                ]
+            ]);
+            _this.profilerObj = new Profiler(function() {
+                var _newState_plugins_pluginID;
+                var rootNodes = _this.profilerObj.getSnapshot().rootNodes;
+                var newState = _this.produceState([
+                    [
+                        "plugins",
+                        pluginID,
+                        "flow",
+                        "data",
+                        "rootNode"
+                    ],
+                    transformProfilerData(wrapInRoot(rootNodes))
+                ], [
+                    [
+                        "plugins",
+                        pluginID,
+                        "flow",
+                        "data",
+                        "rawNodes"
+                    ],
+                    rootNodes
+                ]);
+                _this.store.dispatch(genDataChangeTransaction({
+                    playerID: _this.playerID,
+                    data: (_newState_plugins_pluginID = newState.plugins[pluginID]) === null || _newState_plugins_pluginID === void 0 ? void 0 : _newState_plugins_pluginID.flow.data,
+                    pluginID: pluginID
+                }));
+            });
+            return _this;
+        }
+        _create_class(ProfilerDevtoolsPlugin, [
+            {
+                /**
+     * Produces a new store state with each `[path, value]` pair written into the
+     * draft via `dset`, leaving the live store untouched.
+     */ key: "produceState",
+                value: function produceState() {
+                    for(var _len = arguments.length, updates = new Array(_len), _key = 0; _key < _len; _key++){
+                        updates[_key] = arguments[_key];
+                    }
+                    return produce(this.store.getState(), function(draft) {
+                        updates.forEach(function(param) {
+                            var _param = _sliced_to_array(param, 2), path = _param[0], value = _param[1];
+                            dset(draft, path, value);
+                        });
+                    });
+                }
+            },
+            {
+                key: "startProfiler",
+                value: function startProfiler() {
+                    var _newState_plugins_pluginID;
+                    this.profilerObj.start();
+                    var newState = produce(this.store.getState(), function(draft) {
+                        dset(draft, [
+                            "plugins",
+                            pluginID,
+                            "flow",
+                            "data",
+                            "profiling"
+                        ], true);
+                        dset(draft, [
+                            "plugins",
+                            pluginID,
+                            "flow",
+                            "data",
+                            "displayFlameGraph"
+                        ], false);
+                    });
+                    this.store.dispatch(genDataChangeTransaction({
+                        playerID: this.playerID,
+                        data: (_newState_plugins_pluginID = newState.plugins[pluginID]) === null || _newState_plugins_pluginID === void 0 ? void 0 : _newState_plugins_pluginID.flow.data,
+                        pluginID: pluginID
+                    }));
+                }
+            },
+            {
+                key: "clearProfiler",
+                value: function clearProfiler() {
+                    this.profilerObj.clear();
+                }
+            },
+            {
+                key: "stopProfiler",
+                value: function stopProfiler() {
+                    var _newState_plugins_pluginID;
+                    var result = this.profilerObj.stopProfiler();
+                    var rootNodes = result.rootNodes;
+                    var newState = this.produceState([
+                        [
+                            "plugins",
+                            pluginID,
+                            "flow",
+                            "data",
+                            "rootNode"
+                        ],
+                        transformProfilerData(wrapInRoot(rootNodes))
+                    ], [
+                        [
+                            "plugins",
+                            pluginID,
+                            "flow",
+                            "data",
+                            "rawNodes"
+                        ],
+                        rootNodes
+                    ], [
+                        [
+                            "plugins",
+                            pluginID,
+                            "flow",
+                            "data",
+                            "profiling"
+                        ],
+                        false
+                    ], [
+                        [
+                            "plugins",
+                            pluginID,
+                            "flow",
+                            "data",
+                            "displayFlameGraph"
+                        ],
+                        true
+                    ]);
+                    this.store.dispatch(genDataChangeTransaction({
+                        playerID: this.playerID,
+                        data: (_newState_plugins_pluginID = newState.plugins[pluginID]) === null || _newState_plugins_pluginID === void 0 ? void 0 : _newState_plugins_pluginID.flow.data,
+                        pluginID: pluginID
+                    }));
+                    return result;
+                }
+            },
+            {
+                key: "apply",
+                value: function apply(player) {
+                    var _initialState_plugins_pluginID;
+                    if (!this.checkIfDevtoolsIsActive()) {
+                        return;
+                    }
+                    _get(_get_prototype_of(ProfilerDevtoolsPlugin.prototype), "apply", this).call(this, player);
+                    addProfilerInterceptorsToHooks(player, this.profilerObj);
+                    this.profilerObj.start();
+                    var initialState = produce(this.store.getState(), function(draft) {
+                        dset(draft, [
+                            "plugins",
+                            pluginID,
+                            "flow",
+                            "data",
+                            "profiling"
+                        ], true);
+                        dset(draft, [
+                            "plugins",
+                            pluginID,
+                            "flow",
+                            "data",
+                            "displayFlameGraph"
+                        ], false);
+                    });
+                    this.store.dispatch(genDataChangeTransaction({
+                        playerID: this.playerID,
+                        data: (_initialState_plugins_pluginID = initialState.plugins[pluginID]) === null || _initialState_plugins_pluginID === void 0 ? void 0 : _initialState_plugins_pluginID.flow.data,
+                        pluginID: pluginID
+                    }));
+                }
+            },
+            {
+                key: "processInteraction",
+                value: function processInteraction(interaction) {
+                    var _this_interactionMap_get;
+                    _get(_get_prototype_of(ProfilerDevtoolsPlugin.prototype), "processInteraction", this).call(this, interaction);
+                    var type = interaction.payload.type;
+                    (_this_interactionMap_get = this.interactionMap.get(type)) === null || _this_interactionMap_get === void 0 ? void 0 : _this_interactionMap_get();
+                }
+            }
+        ]);
+        return ProfilerDevtoolsPlugin;
+    }(DevtoolsPlugin);
     return __toCommonJS(src_exports);
 }();
 //# sourceMappingURL=index.global.js.map

@@ -228,7 +228,7 @@ var BasicDevtoolsPlugin = function() {
     var dsetAssign = function dsetAssign(obj, keys, value) {
         var merge = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : false;
         var key = keys[keys.length - 1];
-        if (!key) throw Error("Unable to assign at path containing undefined keys");
+        if (key === void 0) throw Error("Unable to assign at path containing undefined keys");
         var _acc_key2;
         var target = keys.slice(0, -1).reduce(function(acc, key2) {
             return (_acc_key2 = acc[key2]) !== null && _acc_key2 !== void 0 ? _acc_key2 : acc[key2] = {};
@@ -582,7 +582,7 @@ var BasicDevtoolsPlugin = function() {
     };
     var generateUUID = function generateUUID() {
         var d = /* @__PURE__ */ new Date().getTime();
-        var d2 = typeof performance !== "undefined" && performance.now && performance.now() * 1e3 || 0;
+        var d2 = getNowTime() * 1e3;
         return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
             var r = Math.random() * 16;
             if (d > 0) {
@@ -1441,15 +1441,96 @@ var BasicDevtoolsPlugin = function() {
             playerConfig: {}
         }
     };
-    var PLUGIN_VERSION = true ? "0.13.0" : "unstamped";
+    var PLUGIN_VERSION = true ? "0.13.1--canary.17.955" : "unstamped";
+    var _obj;
     var BasicPluginData = {
         id: PLUGIN_ID,
         name: "Standard Devtools",
         description: "Standard Player UI Devtools",
         version: PLUGIN_VERSION,
-        flow: flow_default
+        flow: flow_default,
+        capabilities: {
+            description: "Exposes Player runtime state (flow, data, logs, config) and supports expression evaluation and flow overrides.",
+            data: {
+                flow: {
+                    description: "The currently active Player flow JSON"
+                },
+                data: {
+                    description: "The current Player data model"
+                },
+                logs: {
+                    description: "Accumulated log messages emitted by the Player runtime"
+                },
+                playerConfig: {
+                    description: "Player version and list of registered plugin names"
+                },
+                history: {
+                    description: "Results of previous expression evaluations in this session"
+                }
+            },
+            actions: (_obj = {}, _define_property(_obj, INTERACTIONS.EVALUATE_EXPRESSION, {
+                description: "Evaluate a Player expression string and return the result",
+                params: {
+                    payload: {
+                        type: "string",
+                        description: "The expression to evaluate"
+                    }
+                }
+            }), _define_property(_obj, INTERACTIONS.OVERRIDE_FLOW, {
+                description: "Replace the currently running flow with a new flow JSON",
+                params: {
+                    payload: {
+                        type: "string",
+                        description: "Stringified flow JSON to load"
+                    }
+                }
+            }), _obj)
+        }
     };
     // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/@player-devtools+utils@0.0.0/node_modules/@player-devtools/utils/dist/index.mjs
+    var useStateReducer = function(reducer2, initialState) {
+        var state = initialState;
+        var subscribers = /* @__PURE__ */ new Set();
+        return {
+            getState: function() {
+                return state;
+            },
+            /** Subscribe to state changes; returns an unsubscribe function. */ subscribe: function subscribe(subscriber) {
+                subscribers.add(subscriber);
+                subscriber(state);
+                return function() {
+                    return subscribers.delete(subscriber);
+                };
+            },
+            /** Dispatch an action through the reducer, then run side-effects. */ dispatch: function dispatch(action) {
+                var prevState = state;
+                var nextState = reducer2(prevState, action);
+                if (nextState !== prevState) {
+                    state = nextState;
+                    var _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = undefined;
+                    try {
+                        for(var _iterator = subscribers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true){
+                            var sub = _step.value;
+                            sub(state);
+                        }
+                    } catch (err) {
+                        _didIteratorError = true;
+                        _iteratorError = err;
+                    } finally{
+                        try {
+                            if (!_iteratorNormalCompletion && _iterator.return != null) {
+                                _iterator.return();
+                            }
+                        } finally{
+                            if (_didIteratorError) {
+                                throw _iteratorError;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    };
     function deepAssign(target, source) {
         var merge = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : false;
         if (Array.isArray(target) && Array.isArray(source)) {
@@ -1474,7 +1555,7 @@ var BasicDevtoolsPlugin = function() {
                     }
                 }
             }
-        } else if (target && typeof target === "object" && source && typeof source === "object") {
+        } else if (target && typeof target === "object" && !Array.isArray(target) && source && typeof source === "object" && !Array.isArray(source)) {
             var record = target;
             var _iteratorNormalCompletion1 = true, _didIteratorError1 = false, _iteratorError1 = undefined;
             if (!merge) try {
@@ -1942,49 +2023,6 @@ var BasicDevtoolsPlugin = function() {
         return foo !== foo && bar !== bar;
     }
     // ../../../../../../../../../../../../execroot/_main/bazel-out/k8-fastbuild/bin/node_modules/.aspect_rules_js/@player-devtools+plugin@0.0.0/node_modules/@player-devtools/plugin/dist/index.mjs
-    var useStateReducer = function(reducer2, initialState) {
-        var state = initialState;
-        var subscribers = /* @__PURE__ */ new Set();
-        return {
-            getState: function() {
-                return state;
-            },
-            /** Subscribe to state changes; returns an unsubscribe function. */ subscribe: function subscribe(subscriber) {
-                subscribers.add(subscriber);
-                subscriber(state);
-                return function() {
-                    return subscribers.delete(subscriber);
-                };
-            },
-            /** Dispatch an action through the reducer, then run side-effects. */ dispatch: function dispatch(action) {
-                var prevState = state;
-                var nextState = reducer2(prevState, action);
-                if (nextState !== prevState) {
-                    state = nextState;
-                    var _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = undefined;
-                    try {
-                        for(var _iterator = subscribers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true){
-                            var sub = _step.value;
-                            sub(state);
-                        }
-                    } catch (err) {
-                        _didIteratorError = true;
-                        _iteratorError = err;
-                    } finally{
-                        try {
-                            if (!_iteratorNormalCompletion && _iterator.return != null) {
-                                _iterator.return();
-                            }
-                        } finally{
-                            if (_didIteratorError) {
-                                throw _iteratorError;
-                            }
-                        }
-                    }
-                }
-            }
-        };
-    };
     var containsInteraction = function(interactions, interaction) {
         return interactions.filter(function(i) {
             return dequal(i, interaction);
@@ -2051,6 +2089,11 @@ var BasicDevtoolsPlugin = function() {
         PLAYER_SELECTED: "player-selected"
     };
     var PLUGIN_INACTIVE_WARNING = "The plugin has been registered, but the Player development tools are not active. If you are working in a production environment, it is recommended to remove the plugin. To activate, enable through the browser extension popup for web or configure the FlipperClient for mobile.";
+    var getNowTime = globalThis.performance ? function() {
+        return globalThis.performance.now();
+    } : function() {
+        return Date.now();
+    };
     var NOOP_ID = -1;
     var genDataChangeTransaction = function(param) {
         var playerID = param.playerID, data = param.data, pluginID = param.pluginID;
@@ -2085,9 +2128,12 @@ var BasicDevtoolsPlugin = function() {
             this.lastProcessedInteraction = 0;
             this.store.subscribe(function(param) {
                 var interactions = param.interactions;
+                var start = _this.lastProcessedInteraction;
                 var _interactions_length;
-                if (_this.lastProcessedInteraction < ((_interactions_length = interactions.length) !== null && _interactions_length !== void 0 ? _interactions_length : 0)) {
-                    interactions.slice(_this.lastProcessedInteraction).forEach(_this.processInteraction.bind(_this));
+                var end = (_interactions_length = interactions.length) !== null && _interactions_length !== void 0 ? _interactions_length : 0;
+                if (start < end) {
+                    _this.lastProcessedInteraction = end;
+                    interactions.slice(start, end).forEach(_this.processInteraction.bind(_this));
                 }
             });
         }
@@ -2222,7 +2268,6 @@ var BasicDevtoolsPlugin = function() {
                             _messenger_: true
                         });
                     }
-                    this.lastProcessedInteraction += 1;
                 }
             },
             {
@@ -2258,12 +2303,6 @@ var BasicDevtoolsPlugin = function() {
                     var _this = this;
                     this.logger = new WeakRef(player.logger);
                     if (!this.checkIfDevtoolsIsActive()) return;
-                    this.options.pluginData.flow.data.playerConfig = {
-                        version: player.getVersion(),
-                        plugins: player.getPlugins().map(function(plugin) {
-                            return plugin.name;
-                        })
-                    };
                     _get(_get_prototype_of(BasicDevtoolsPlugin.prototype), "apply", this).call(this, player);
                     this.playerConfig = {
                         version: player.getVersion(),
