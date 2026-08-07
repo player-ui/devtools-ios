@@ -1685,7 +1685,7 @@ var ProfilerDevtoolsPlugin = function() {
             rawNodes: []
         }
     };
-    var PLUGIN_VERSION = true ? "0.14.1" : "unstamped";
+    var PLUGIN_VERSION = true ? "0.14.2" : "unstamped";
     var _obj;
     var ProfilerPluginData = {
         id: PLUGIN_ID,
