@@ -1441,7 +1441,7 @@ var BasicDevtoolsPlugin = function() {
             playerConfig: {}
         }
     };
-    var PLUGIN_VERSION = true ? "0.14.1" : "unstamped";
+    var PLUGIN_VERSION = true ? "0.14.2--canary.22.1084" : "unstamped";
     var _obj;
     var BasicPluginData = {
         id: PLUGIN_ID,
