@@ -1685,7 +1685,7 @@ var ProfilerDevtoolsPlugin = function() {
             rawNodes: []
         }
     };
-    var PLUGIN_VERSION = true ? "0.15.1" : "unstamped";
+    var PLUGIN_VERSION = true ? "0.15.1--canary.29.1254" : "unstamped";
     var _obj;
     var ProfilerPluginData = {
         id: PLUGIN_ID,
