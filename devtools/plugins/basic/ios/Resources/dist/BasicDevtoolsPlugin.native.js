@@ -1441,7 +1441,7 @@ var BasicDevtoolsPlugin = function() {
             playerConfig: {}
         }
     };
-    var PLUGIN_VERSION = true ? "0.15.1" : "unstamped";
+    var PLUGIN_VERSION = true ? "0.15.2-next.0" : "unstamped";
     var _obj;
     var BasicPluginData = {
         id: PLUGIN_ID,
