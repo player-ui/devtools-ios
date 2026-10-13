@@ -396,14 +396,15 @@ var Messenger = function() {
                         var message = _this.addTransactionMetadata(event);
                         _this.options.sendMessage(message);
                     });
-                    _Messenger.reset();
+                    delete _Messenger.events[this.id];
+                    delete _Messenger.connections[this.id];
                     this.log("destroyed");
                 }
             }
         ], [
             {
                 key: "reset",
-                value: /** reset static records */ function reset() {
+                value: /** reset static records for every instance, intended for tests */ function reset() {
                     _Messenger.events = {};
                     _Messenger.connections = {};
                 }
