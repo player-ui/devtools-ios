@@ -354,7 +354,8 @@ var Messenger = function() {
             {
                 key: "handleDisconnectMessage",
                 value: function handleDisconnectMessage(parsed) {
-                    delete _Messenger.connections[parsed.sender];
+                    var _Messenger_connections_this_id;
+                    (_Messenger_connections_this_id = _Messenger.connections[this.id]) === null || _Messenger_connections_this_id === void 0 ? true : delete _Messenger_connections_this_id[parsed.sender];
                     this.log("disconnected - ".concat(parsed.context, ":").concat(parsed.sender));
                 }
             },
@@ -387,23 +388,29 @@ var Messenger = function() {
                         clearInterval(this.beaconInterval);
                     }
                     this.options.removeListener(this.handleMessage);
-                    Object.keys(_Messenger.connections).forEach(function(connection) {
+                    var _Messenger_connections_this_id;
+                    Object.keys((_Messenger_connections_this_id = _Messenger.connections[this.id]) !== null && _Messenger_connections_this_id !== void 0 ? _Messenger_connections_this_id : {}).forEach(function(connection) {
                         var event = {
                             type: "MESSENGER_DISCONNECT",
                             payload: null,
                             target: connection
                         };
                         var message = _this.addTransactionMetadata(event);
-                        _this.options.sendMessage(message);
+                        _this.options.sendMessage(message).catch(function() {
+                            var _this_options_handleFailedMessage, _this_options;
+                            (_this_options_handleFailedMessage = (_this_options = _this.options).handleFailedMessage) === null || _this_options_handleFailedMessage === void 0 ? void 0 : _this_options_handleFailedMessage.call(_this_options, message);
+                            _this.log("failed to send disconnect from ".concat(_this.id, " to ").concat(connection));
+                        });
                     });
-                    _Messenger.reset();
+                    delete _Messenger.events[this.id];
+                    delete _Messenger.connections[this.id];
                     this.log("destroyed");
                 }
             }
         ], [
             {
                 key: "reset",
-                value: /** reset static records */ function reset() {
+                value: /** reset static records for every instance, intended for tests */ function reset() {
                     _Messenger.events = {};
                     _Messenger.connections = {};
                 }
