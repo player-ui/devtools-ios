@@ -1441,7 +1441,7 @@ var BasicDevtoolsPlugin = function() {
             playerConfig: {}
         }
     };
-    var PLUGIN_VERSION = true ? "0.16.0" : "unstamped";
+    var PLUGIN_VERSION = true ? "0.16.1-next.3" : "unstamped";
     var _obj;
     var BasicPluginData = {
         id: PLUGIN_ID,
@@ -2042,6 +2042,14 @@ var BasicDevtoolsPlugin = function() {
                     };
                     draft.messages.push(message);
                 });
+            case "PLAYER_DEVTOOLS_PLAYER_STOPPED":
+                return produce(state, function(draft) {
+                    var message = {
+                        type: "PLAYER_DEVTOOLS_PLAYER_STOPPED",
+                        payload: transaction.payload
+                    };
+                    draft.messages.push(message);
+                });
             case "PLAYER_DEVTOOLS_PLUGIN_DATA_CHANGE":
                 return produce(state, function(draft) {
                     var payload = transaction.payload;
@@ -2124,6 +2132,7 @@ var BasicDevtoolsPlugin = function() {
             this.options = options;
             this.name = "DevtoolsPlugin";
             this.loggedWarning = false;
+            this.announced = false;
             this.store = useStateReducer(reducer, INITIAL_STATE);
             this.lastProcessedInteraction = 0;
             this.store.subscribe(function(param) {
@@ -2192,6 +2201,25 @@ var BasicDevtoolsPlugin = function() {
                         type: "PLAYER_DEVTOOLS_PLAYER_INIT",
                         payload: {
                             plugins: _define_property({}, this.pluginID, this.options.pluginData)
+                        },
+                        sender: this.options.playerID,
+                        context: "player",
+                        target: "player",
+                        timestamp: Date.now(),
+                        _messenger_: true
+                    };
+                    this.store.dispatch(transaction);
+                    this.announced = true;
+                }
+            },
+            {
+                key: "dispatchPlayerStopped",
+                value: function dispatchPlayerStopped() {
+                    var transaction = {
+                        id: -1,
+                        type: "PLAYER_DEVTOOLS_PLAYER_STOPPED",
+                        payload: {
+                            pluginID: this.pluginID
                         },
                         sender: this.options.playerID,
                         context: "player",
@@ -2275,6 +2303,17 @@ var BasicDevtoolsPlugin = function() {
                 value: function apply(player) {
                     if (!this.checkIfDevtoolsIsActive()) return;
                     this.dispatchPlayerInit();
+                }
+            },
+            {
+                /**
+     * Tell devtools this plugin is gone. Call it before the messenger is destroyed.
+     * Safe to call more than once.
+     */ key: "teardown",
+                value: function teardown() {
+                    if (!this.announced) return;
+                    this.announced = false;
+                    this.dispatchPlayerStopped();
                 }
             }
         ]);
