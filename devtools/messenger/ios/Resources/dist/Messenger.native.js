@@ -169,23 +169,33 @@ var Messenger = function() {
                 }
             },
             {
+                key: "getConnections",
+                value: function getConnections() {
+                    var connections = _Messenger.connections[this.id];
+                    if (!connections) {
+                        connections = {};
+                        _Messenger.connections[this.id] = connections;
+                    }
+                    return connections;
+                }
+            },
+            {
                 key: "getConnection",
                 value: function getConnection(id) {
-                    if (!_Messenger.connections[this.id]) {
-                        _Messenger.connections[this.id] = {};
-                    }
-                    return _Messenger.connections[this.id][id];
+                    return this.getConnections()[id];
                 }
             },
             {
                 key: "addConnection",
                 value: function addConnection(id) {
-                    _Messenger.connections[this.id][id] = {
+                    var connection = {
                         id: id,
                         messagesReceived: 0,
                         messagesSent: 0,
                         desync: false
                     };
+                    this.getConnections()[id] = connection;
+                    return connection;
                 }
             },
             {
@@ -210,10 +220,8 @@ var Messenger = function() {
                     if (!message.target || internalEvents.includes(message.type)) {
                         return -1;
                     }
-                    if (!this.getConnection(message.target)) {
-                        this.addConnection(message.target);
-                    }
-                    var connection = this.getConnection(message.target);
+                    var _this_getConnection;
+                    var connection = (_this_getConnection = this.getConnection(message.target)) !== null && _this_getConnection !== void 0 ? _this_getConnection : this.addConnection(message.target);
                     connection.messagesSent += 1;
                     return connection.messagesSent;
                 }
@@ -252,7 +260,7 @@ var Messenger = function() {
                     var isFromSameContext = parsed.context === this.options.context;
                     var isTargetingOthers = parsed.target ? parsed.target !== this.id : false;
                     var connection = this.getConnection(parsed.sender);
-                    var isKnownConnection = Boolean(connection);
+                    var isKnownConnection = connection !== void 0;
                     if (!isFromMessenger || isFromSelf || isFromSameContext || isTargetingOthers || isKnownConnection && parsed.type === "MESSENGER_BEACON") {
                         return;
                     }
@@ -267,8 +275,10 @@ var Messenger = function() {
                         return;
                     }
                     if (isKnownConnection) {
+                        var _parsed_payload_events_;
                         var isBatch = parsed.type === "MESSENGER_EVENT_BATCH";
-                        var transactionID = isBatch ? parsed.payload.events[0].id : parsed.id;
+                        var _parsed_payload_events__id;
+                        var transactionID = isBatch ? (_parsed_payload_events__id = (_parsed_payload_events_ = parsed.payload.events[0]) === null || _parsed_payload_events_ === void 0 ? void 0 : _parsed_payload_events_.id) !== null && _parsed_payload_events__id !== void 0 ? _parsed_payload_events__id : -1 : parsed.id;
                         var messagesReceived = connection.messagesReceived, desync = connection.desync;
                         if (transactionID > -1 && transactionID <= messagesReceived) {
                             return;
@@ -304,7 +314,7 @@ var Messenger = function() {
                     if (this.getConnection(parsed.sender)) {
                         return;
                     }
-                    this.addConnection(parsed.sender);
+                    var connection = this.addConnection(parsed.sender);
                     var events = this.getEvents();
                     if (events.length > 0) {
                         var message = {
@@ -318,7 +328,6 @@ var Messenger = function() {
                         };
                         this.options.sendMessage(this.addTransactionMetadata(message));
                         this.log("messages [0 - ".concat(events.length - 1, "] sent to ").concat(parsed.context, ":").concat(parsed.sender));
-                        var connection = this.getConnection(parsed.sender);
                         connection.messagesSent = events.length;
                     }
                     this.log("new connection added - ".concat(parsed.context, ":").concat(parsed.sender));
@@ -354,7 +363,8 @@ var Messenger = function() {
             {
                 key: "handleDisconnectMessage",
                 value: function handleDisconnectMessage(parsed) {
-                    delete _Messenger.connections[parsed.sender];
+                    var _Messenger_connections_this_id;
+                    (_Messenger_connections_this_id = _Messenger.connections[this.id]) === null || _Messenger_connections_this_id === void 0 ? true : delete _Messenger_connections_this_id[parsed.sender];
                     this.log("disconnected - ".concat(parsed.context, ":").concat(parsed.sender));
                 }
             },
@@ -387,23 +397,29 @@ var Messenger = function() {
                         clearInterval(this.beaconInterval);
                     }
                     this.options.removeListener(this.handleMessage);
-                    Object.keys(_Messenger.connections).forEach(function(connection) {
+                    var _Messenger_connections_this_id;
+                    Object.keys((_Messenger_connections_this_id = _Messenger.connections[this.id]) !== null && _Messenger_connections_this_id !== void 0 ? _Messenger_connections_this_id : {}).forEach(function(connection) {
                         var event = {
                             type: "MESSENGER_DISCONNECT",
                             payload: null,
                             target: connection
                         };
                         var message = _this.addTransactionMetadata(event);
-                        _this.options.sendMessage(message);
+                        _this.options.sendMessage(message).catch(function() {
+                            var _this_options_handleFailedMessage, _this_options;
+                            (_this_options_handleFailedMessage = (_this_options = _this.options).handleFailedMessage) === null || _this_options_handleFailedMessage === void 0 ? void 0 : _this_options_handleFailedMessage.call(_this_options, message);
+                            _this.log("failed to send disconnect from ".concat(_this.id, " to ").concat(connection));
+                        });
                     });
-                    _Messenger.reset();
+                    delete _Messenger.events[this.id];
+                    delete _Messenger.connections[this.id];
                     this.log("destroyed");
                 }
             }
         ], [
             {
                 key: "reset",
-                value: /** reset static records */ function reset() {
+                value: /** reset static records for every instance, intended for tests */ function reset() {
                     _Messenger.events = {};
                     _Messenger.connections = {};
                 }
